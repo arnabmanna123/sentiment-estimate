@@ -49,3 +49,30 @@ jobs:
         env:
           CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
         run: python -m unittest tests/test_flask_app.py
+
+      - name: Login to Azure Container Registry
+        if: success()
+        run: |
+          az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+          az acr login --name ${{ secrets.ACR_REGISTRY_NAME }}
+
+      - name: Build Docker image
+        run: |
+            docker build -t sentiment-estimate-app:latest .
+
+      - name: Tag Docker image for ACR
+        run: |
+            docker tag sentiment-estimate-app:latest \
+            ${{ secrets.ACR_LOGIN_SERVER }}/sentiment-estimate-app:latest
+
+      - name: Check Docker Authentication
+        run: docker info
+
+      - name: Push Docker image to ACR
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/sentiment-estimate-app:latest
+
+      - name: Set Up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'

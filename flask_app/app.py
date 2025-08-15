@@ -149,8 +149,8 @@ print(f"Fetching model from: {model_uri}")
 model = mlflow.pyfunc.load_model(model_uri)
 # Updated path to use parent directory's models folder
 app_dir = os.path.dirname(os.path.abspath(__file__))
-vectorizer_path = os.path.join(app_dir, '..', 'models', 'vectorizer.pkl')
-vectorizer = pickle.load(open(vectorizer_path, 'rb'))
+vectorizer_path = os.path.join(app_dir, 'models', 'vectorizer.pkl')
+vectorizer = pickle.load(open('models/vectorizer.pkl', 'rb'))
 
 # Routes
 
