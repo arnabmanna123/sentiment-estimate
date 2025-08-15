@@ -23,33 +23,25 @@ def promote_model():
     client = mlflow.MlflowClient()
 
     model_name = "my_model"
-    # Get the latest version in staging using search_model_versions
-    staging_versions = client.search_model_versions(f"name='{model_name}'")
-    staging_versions = [
-        v for v in staging_versions if v.current_stage == "Staging"]
-    if not staging_versions:
-        raise Exception("No model version found in Staging")
-    latest_version_staging = max(
-        staging_versions, key=lambda x: x.creation_timestamp).version
 
-    # Get production versions using search_model_versions
-    prod_versions = client.search_model_versions(f"name='{model_name}'")
-    prod_versions = [
-        v for v in prod_versions if v.current_stage == "Production"]
-    for version in prod_versions:
-        client.transition_model_version_stage(
-            name=model_name,
-            version=version.version,
-            stage="Archived"
-        )
+    try:
+        # Get all versions of the model
+        versions = client.get_registered_model(model_name).versions
+        if not versions:
+            raise Exception(f"No versions found for model {model_name}")
 
-    # Promote the new model to production
-    client.transition_model_version_stage(
-        name=model_name,
-        version=latest_version_staging,
-        stage="Production"
-    )
-    print(f"Model version {latest_version_staging} promoted to Production")
+        # Get the latest version
+        latest_version = max(versions, key=lambda x: x.creation_timestamp)
+        version_number = latest_version.version
+
+        # Set the 'production' alias for the latest version
+        client.set_registered_model_alias(
+            model_name, "production", version_number)
+
+        print(f"Model version {version_number} set as production alias")
+    except Exception as e:
+        print(f"Error promoting model: {str(e)}")
+        raise
 
 
 if __name__ == "__main__":
