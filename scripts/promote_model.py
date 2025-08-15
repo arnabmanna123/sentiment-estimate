@@ -23,13 +23,19 @@ def promote_model():
     client = mlflow.MlflowClient()
 
     model_name = "my_model"
-    # Get the latest version in staging
-    latest_version_staging = client.get_latest_versions(
-        model_name, stages=["Staging"])[0].version
+    # Get the latest version in staging using search_model_versions
+    staging_versions = client.search_model_versions(f"name='{model_name}'")
+    staging_versions = [
+        v for v in staging_versions if v.current_stage == "Staging"]
+    if not staging_versions:
+        raise Exception("No model version found in Staging")
+    latest_version_staging = max(
+        staging_versions, key=lambda x: x.creation_timestamp).version
 
-    # Archive the current production model
-    prod_versions = client.get_latest_versions(
-        model_name, stages=["Production"])
+    # Get production versions using search_model_versions
+    prod_versions = client.search_model_versions(f"name='{model_name}'")
+    prod_versions = [
+        v for v in prod_versions if v.current_stage == "Production"]
     for version in prod_versions:
         client.transition_model_version_stage(
             name=model_name,
