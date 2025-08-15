@@ -1,1 +1,4 @@
-
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = azure://dvc/dvcstore
