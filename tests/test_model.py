@@ -23,7 +23,7 @@ class TestModelLoading(unittest.TestCase):
 
         dagshub_url = "https://dagshub.com"
         repo_owner = "arnabmanna123"
-        repo_name = "YT-Capstone-Project"
+        repo_name = "sentiment-estimate"
 
         # Set up MLflow tracking URI
         mlflow.set_tracking_uri(
@@ -36,16 +36,27 @@ class TestModelLoading(unittest.TestCase):
         cls.new_model_uri = f'models:/{cls.new_model_name}/{cls.new_model_version}'
         cls.new_model = mlflow.pyfunc.load_model(cls.new_model_uri)
 
-        # Load the vectorizer
-        cls.vectorizer = pickle.load(open('models/vectorizer.pkl', 'rb'))
+        # Load the vectorizer (using absolute path)
+        project_root = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))
+        vectorizer_path = os.path.join(
+            project_root, 'models', 'vectorizer.pkl')
+        cls.vectorizer = pickle.load(open(vectorizer_path, 'rb'))
 
-        # Load holdout test data
-        cls.holdout_data = pd.read_csv('data/processed/test_bow.csv')
+        # Load holdout test data (using absolute path)
+        data_path = os.path.join(project_root, 'data',
+                                 'processed', 'test_bow.csv')
+        cls.holdout_data = pd.read_csv(data_path)
 
     @staticmethod
-    def get_latest_model_version(model_name, stage="Staging"):
+    def get_latest_model_version(model_name):
         client = mlflow.MlflowClient()
-        latest_version = client.get_latest_versions(model_name, stages=[stage])
+        # Try Production first, then None stage
+        latest_version = client.get_latest_versions(
+            model_name, stages=["Production"])
+        if not latest_version:
+            latest_version = client.get_latest_versions(
+                model_name, stages=["None"])
         return latest_version[0].version if latest_version else None
 
     def test_model_loaded_properly(self):
