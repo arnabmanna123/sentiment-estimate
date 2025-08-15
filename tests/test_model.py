@@ -31,8 +31,10 @@ class TestModelLoading(unittest.TestCase):
 
         # Load the new model from MLflow model registry
         cls.new_model_name = "my_model"
-        cls.new_model_version = cls.get_latest_model_version(
-            cls.new_model_name)
+        cls.new_model_version = "4"  # Explicitly using version 4 as in app.py
+
+        print(
+            f"Loading model: {cls.new_model_name} version: {cls.new_model_version}")
         cls.new_model_uri = f'models:/{cls.new_model_name}/{cls.new_model_version}'
         cls.new_model = mlflow.pyfunc.load_model(cls.new_model_uri)
 
@@ -47,17 +49,6 @@ class TestModelLoading(unittest.TestCase):
         data_path = os.path.join(project_root, 'data',
                                  'processed', 'test_bow.csv')
         cls.holdout_data = pd.read_csv(data_path)
-
-    @staticmethod
-    def get_latest_model_version(model_name):
-        client = mlflow.MlflowClient()
-        # Try Production first, then None stage
-        latest_version = client.get_latest_versions(
-            model_name, stages=["Production"])
-        if not latest_version:
-            latest_version = client.get_latest_versions(
-                model_name, stages=["None"])
-        return latest_version[0].version if latest_version else None
 
     def test_model_loaded_properly(self):
         self.assertIsNotNone(self.new_model)
